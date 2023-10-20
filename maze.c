@@ -3,11 +3,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
-#define MAX_LENGTH 100
-#define ASCII_ZERO 48
+#define MAX_LENGTH 101
 
 //struct containing matrix
 typedef struct {
@@ -16,27 +16,61 @@ typedef struct {
     unsigned char *cells;
 } Map;
 
+//function that checks if the string contains numbers
+bool isNum(char str[])
+{
+    for (int i = 0; str[i] != '\0'; i++)
+        {
+            //return false if input is not a number or a space
+            if (!isdigit(str[i]) && !isspace(str[i]))
+            {
+                return false;
+            }
+        }
+    return true;
+}
+
 //function that reads data from the file
 void scanFile(int *rows, int *cols)
 {
     char line[MAX_LENGTH];
-
+    int num1;
+    int num2;
+    
     //if there is no file specified, exit function and display error
     if (isatty(STDIN_FILENO))
     {
-	    fprintf(stderr, "No file specified \n");
+	    fprintf(stderr, "No file specified\n");
 	    exit(1);
     }
 
-    if (fgets(line, MAX_LENGTH, stdin) != NULL)                         //TTTTTTOOOOOOODDDDDDOOOOO wrong input 
+    if (fgets(line, MAX_LENGTH, stdin) != NULL)
     {
-        //convert values to integers
-        *rows = line[0] - ASCII_ZERO;                                   //doesnt work for multiple numbers, FIX
-        *cols = line[2] - ASCII_ZERO;
+        //if there are characters other than numbers in the file , exit function and display error
+        if(!isNum(line))
+        {
+            fprintf(stderr, "The file contains characters that are not allowed\n");
+            exit(1);
+        }
+        else
+        {
+            //scan first two numbers from first line
+            if (sscanf(line," %d %d", &num1, &num2))
+            {
+                *rows = num1;
+                *cols = num2;
+            }
+            //exit code when scan wasn't successful
+            else
+            {
+                fprintf(stderr, "Failed to read numbers from a line");
+                exit(1);
+            }
+        }
     }
     else
     {
-        fprintf(stderr, "Failed to read data from the file");
+        fprintf(stderr, "Failed to read data from the file\n");
         exit(1);
     }
 }
@@ -100,6 +134,13 @@ int main(int agrc, char *argv[])
     int rows;
     int cols; 
 
+    //if there are no arguments in comand line exit with an error
+    if (agrc < 2)
+    {
+        fprintf(stderr, "No arguments given");
+        return 1;
+    }
+    
     //display instructions when '--help' is the user input
     if (strcmp(argv[1], help) == 0) 
     {
@@ -115,6 +156,7 @@ int main(int agrc, char *argv[])
         //read from file to get the necessary data
         scanFile(&rows, &cols);
         printf("Rows: %d Cols: %d\n", rows, cols);
+
         //create a map and fill it with data drom a file
         Map *map = createMap(rows, cols);
         appendToMap(map);
