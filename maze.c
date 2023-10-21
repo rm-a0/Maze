@@ -104,6 +104,19 @@ Map* createMap(int rows, int cols)
     return map;
 }
 
+//function used while writing code(delete later)
+void printMap(Map *map)
+{
+    for (int i = 0; i < map->rows; i++)
+    {
+        for (int j = 0; j < map->cols; j++)
+        {
+            printf("%d ", map->cells[i * map->cols + j]);
+        }
+        printf("\n");
+    }
+}
+
 //function that gets rid of all allocated memory
 void freeMap(Map *map)
 {
@@ -112,13 +125,19 @@ void freeMap(Map *map)
 }
 
 //function that appends data to matrix from stdin
-void appendToMap(Map *map) 
+void appendToMap(int rows, int cols, Map *map) 
 {
-    printf("TODO 1\n");
-}
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            map->cells[i * cols + j] = 0;
+        }
+    }
+} 
 
 //function that checks if the content of the file is valid
-void testMap(Map *map) 
+void testMap(int rows, int cols, Map *map) 
 {
     printf("TODO 2\n");
 }
@@ -155,14 +174,16 @@ int main(int agrc, char *argv[])
     {
         //read from file to get the necessary data
         scanFile(&rows, &cols);
-        printf("Rows: %d Cols: %d\n", rows, cols);
+        printf("Rows: %d Cols: %d\n", rows, cols); //delete later
 
         //create a map and fill it with data drom a file
         Map *map = createMap(rows, cols);
-        appendToMap(map);
+        appendToMap(rows, cols, map);
+        printMap(map);
+        freeMap(map);
 
         //run test to check if data in the matrix are correct
-        testMap(map);
+        testMap(rows, cols, map);
 
         //free allocated memory
         freeMap(map);
