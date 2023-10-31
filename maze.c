@@ -16,18 +16,10 @@ typedef struct {
     unsigned char *cells;
 } Map;
 
-//function that checks if the string contains numbers
-bool isNum(char str[])
+//function that converts ascii value of digits
+void toNum(int *value)
 {
-    for (int i = 0; str[i] != '\0'; i++)
-        {
-            //return false if input is not a number or a space
-            if (!isdigit(str[i]) && !isspace(str[i]))
-            {
-                return false;
-            }
-        }
-    return true;
+    *value = *value - 48;
 }
 
 //function that reads data from the file
@@ -46,26 +38,17 @@ void scanFile(int *rows, int *cols)
 
     if (fgets(line, MAX_LENGTH, stdin) != NULL)
     {
-        //if there are characters other than numbers in the file , exit function and display error
-        if(!isNum(line))
+        //scan first two numbers from first line
+        if (sscanf(line," %d %d", &num1, &num2) == 2)
         {
-            fprintf(stderr, "The file contains characters that are not allowed\n");
-            exit(1);
+            *rows = num1;
+            *cols = num2;
         }
+        //exit code when scan wasn't successful
         else
         {
-            //scan first two numbers from first line
-            if (sscanf(line," %d %d", &num1, &num2))
-            {
-                *rows = num1;
-                *cols = num2;
-            }
-            //exit code when scan wasn't successful
-            else
-            {
-                fprintf(stderr, "Failed to read numbers from a line");
-                exit(1);
-            }
+            fprintf(stderr, "Failed to read data from the first line");
+            exit(1);
         }
     }
     else
@@ -104,6 +87,13 @@ Map* createMap(int rows, int cols)
     return map;
 }
 
+//function that gets rid of all allocated memory
+void freeMap(Map *map)
+{
+    free(map->cells);
+    free(map);
+}
+
 //function used while writing code(delete later)
 void printMap(Map *map)
 {
@@ -117,29 +107,37 @@ void printMap(Map *map)
     }
 }
 
-//function that gets rid of all allocated memory
-void freeMap(Map *map)
-{
-    free(map->cells);
-    free(map);
-}
-
 //function that appends data to matrix from stdin
-void appendToMap(int rows, int cols, Map *map) 
+void appendToMap(int rows, int cols, Map *map)
+{
+    int value;
+    int index = 0;
+
+    while((value = fgetc(stdin)) != EOF)
+    {
+        if (value != ' ' && value != '\t' && value != '\n')
+        {
+            toNum(&value);
+            map->cells[index] = (unsigned char)value;
+            index ++;
+        }
+    }
+} 
+
+bool isBorder(int row, int col, Map *map, int border)
+{
+    printf("TODO");
+}
+//function that checks if the content of the file is valid
+void testMap(int rows, int cols, Map *map) 
 {
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++)
         {
-            map->cells[i * cols + j] = 0;
+            isBorder(i, j, map, map->cells[i * map->cols + j]);
         }
     }
-} 
-
-//function that checks if the content of the file is valid
-void testMap(int rows, int cols, Map *map) 
-{
-    printf("TODO 2\n");
 }
 
 int main(int agrc, char *argv[])
@@ -153,7 +151,7 @@ int main(int agrc, char *argv[])
     int rows;
     int cols; 
 
-    //if there are no arguments in comand line exit with an error
+    //if there are no arguments in command line exit with an error
     if (agrc < 2)
     {
         fprintf(stderr, "No arguments given");
@@ -163,12 +161,14 @@ int main(int agrc, char *argv[])
     //display instructions when '--help' is the user input
     if (strcmp(argv[1], help) == 0) 
     {
+        printf("\n");
         printf("Input a file containing matrix of numbers\n");
-        printf("Type '--test < file' to check if data in the matrix are valid\n");
-        printf("Type '--rpath R C < file' to solve labyrinth using the right hand rule\n");
-        printf("Type '--lpath R C < file' to solve labyrinth using the left hand rule\n");
-        printf("Type '--shortest R C < file' to find the shortest path in the labyrinth\n");
-        printf("*R C = row and collumn you want to start on*\n");
+        printf("Type '--test <file' to check if data in the matrix are valid\n");
+        printf("Type '--rpath R C <file' to solve labyrinth using the right hand rule\n");
+        printf("Type '--lpath R C <file' to solve labyrinth using the left hand rule\n");
+        printf("Type '--shortest R C <file' to find the shortest path in the labyrinth\n");
+        printf("\033[3mR C = row and collumn you want to start on\033[0m\n");
+        printf("\n");
     }
     else if (strcmp(argv[1], test) == 0) 
     {
@@ -180,8 +180,7 @@ int main(int agrc, char *argv[])
         Map *map = createMap(rows, cols);
         appendToMap(rows, cols, map);
         printMap(map);
-        freeMap(map);
-
+        
         //run test to check if data in the matrix are correct
         testMap(rows, cols, map);
 
