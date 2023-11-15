@@ -1,12 +1,11 @@
 //xrepcim00
-//17.10.2023
+//15.11.2023
 
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <unistd.h>
 #define MAX_LENGTH 101
 
 //struct containing matrix
@@ -16,10 +15,16 @@ typedef struct {
     unsigned char *cells;
 } Map;
 
+enum Triangle {
+    LEFT,
+    RIGHT,
+    MIDDLE
+};
+
 //function that converts ascii value of digits
-void toNum(int *value)
+void charToDigit(int *value)
 {
-    *value = *value - 48;
+    *value = *value - '0';
 }
 
 //function that reads data from the file
@@ -28,13 +33,6 @@ void scanFile(int *rows, int *cols)
     char line[MAX_LENGTH];
     int num1;
     int num2;
-    
-    //if there is no file specified, exit function and display error
-    if (isatty(STDIN_FILENO))
-    {
-	    fprintf(stderr, "No file specified\n");
-	    exit(1);
-    }
 
     if (fgets(line, MAX_LENGTH, stdin) != NULL)
     {
@@ -47,13 +45,13 @@ void scanFile(int *rows, int *cols)
         //exit code when scan wasn't successful
         else
         {
-            fprintf(stderr, "Failed to read data from the first line");
+            fprintf(stderr, "Invalid");
             exit(1);
         }
     }
     else
     {
-        fprintf(stderr, "Failed to read data from the file\n");
+        fprintf(stderr, "Invalid");
         exit(1);
     }
 }
@@ -108,7 +106,7 @@ void printMap(Map *map)
 }
 
 //function that appends data to matrix from stdin
-void appendToMap(int rows, int cols, Map *map)
+void appendToMap(Map *map)
 {
     int value;
     int index = 0;
@@ -117,27 +115,67 @@ void appendToMap(int rows, int cols, Map *map)
     {
         if (value != ' ' && value != '\t' && value != '\n')
         {
-            toNum(&value);
+            charToDigit(&value);
             map->cells[index] = (unsigned char)value;
             index ++;
         }
     }
+
+    //when matrix dimensions do not match given parameters, exit with an error
+    if (index != map->cols*map->rows)
+    {
+        fprintf(stderr, "Invalid");
+        freeMap(map);
+        exit(1);
+    }
 } 
 
-bool isBorder(int row, int col, Map *map, int border)
+//function that returns true if there is an obstacle at border of given position
+bool isBorder(Map *map, int row, int col, int border)
 {
-    printf("TODO");
+    int cell = map->cells[row*map->cols + col];
+    //get a digit from given position(border) from bit representation of cell
+    int bit = (cell >> border) & 1;
+    //return 1 or 0 (True or False)
+    return bit;
 }
+
 //function that checks if the content of the file is valid
-void testMap(int rows, int cols, Map *map) 
+int testMap(int rows, int cols, Map *map) 
 {
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++)
         {
-            isBorder(i, j, map, map->cells[i * map->cols + j]);
+            //if border is on the right side of the triangle, the next triangle should have border on its left side
+            if (isBorder(map, i, j, RIGHT) != isBorder(map, i, j+1, LEFT) && j+1 < cols)
+            {
+                fprintf(stderr, "Invalid");
+                return 1;
+            }
+            //when i+j is divisible by 2 the triangle is upside down
+            else if ((i+j)%2 == 0)
+            {
+                //if border is at the top of the triangle, the triangle above should have border on the bottom
+                if (isBorder(map, i,j, MIDDLE) != isBorder(map, i-1, j, MIDDLE) && i-1 >= 0)
+                {
+                    fprintf(stderr, "Invalid");
+                    return 1;
+                }
+            }
+            else
+            {
+                //if border is at the bottom of the triangle, the triangle bellow should have border on the top
+                if (isBorder(map, i,j, MIDDLE) != isBorder(map, i+1, j, MIDDLE) && i+1 < rows)
+                {
+                    fprintf(stderr, "Invalid");
+                    return 1;
+                }
+            }
         }
     }
+    printf("Valid\n");
+    return 0;
 }
 
 int main(int agrc, char *argv[])
@@ -174,18 +212,36 @@ int main(int agrc, char *argv[])
     {
         //read from file to get the necessary data
         scanFile(&rows, &cols);
-        printf("Rows: %d Cols: %d\n", rows, cols); //delete later
-
         //create a map and fill it with data drom a file
         Map *map = createMap(rows, cols);
-        appendToMap(rows, cols, map);
-        printMap(map);
-        
+        appendToMap(map);
+
         //run test to check if data in the matrix are correct
         testMap(rows, cols, map);
 
         //free allocated memory
         freeMap(map);
+    }
+    else if (strcmp(argv[1], rpath) == 0)
+    {
+        //read from file to get the necessary data
+        scanFile(&rows, &cols);
+        //create a map and fill it with data drom a file
+        Map *map = createMap(rows, cols);
+        appendToMap(map);
+
+        printf("TODD2");
+
+        //free allocated memory
+        freeMap(map);
+    }
+    else if (strcmp(argv[1], lpath) == 0)
+    {
+        printf("TODD3");
+    }
+    else if (strcmp(argv[1], shortest) == 0)
+    {
+        printf("TODD4");
     }
 
     return 0;
