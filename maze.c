@@ -105,7 +105,7 @@ void freeMap(Map *map)
     free(map);
 }
 
-//function that appends data to matrix from stdin
+//function that appends data to matrix from file
 int appendToMap(Map *map, FILE *file)
 {
     int value;
@@ -149,7 +149,7 @@ int testMap(int rows, int cols, Map *map)
         for (int j = 0; j < cols; j++)
         {
             //if border is on the right side of the triangle, the next triangle should have border on its left side
-            if (isBorder(map, i, j, RIGHT) != isBorder(map, i, j+1, LEFT) && j+1 < cols)
+            if (j+1 < cols && isBorder(map, i, j, RIGHT) != isBorder(map, i, j+1, LEFT))
             {
                 fprintf(stderr, "Invalid");
                 return 1;
@@ -158,7 +158,7 @@ int testMap(int rows, int cols, Map *map)
             else if ((i+j)%2 == 0)
             {
                 //if border is at the top of the triangle, the triangle above should have border on the bottom
-                if (isBorder(map, i,j, MIDDLE) != isBorder(map, i-1, j, MIDDLE) && i-1 >= 0)
+                if (i-1 >= 0 && isBorder(map, i,j, MIDDLE) != isBorder(map, i-1, j, MIDDLE))
                 {
                     fprintf(stderr, "Invalid");
                     return 1;
@@ -167,7 +167,7 @@ int testMap(int rows, int cols, Map *map)
             else
             {
                 //if border is at the bottom of the triangle, the triangle bellow should have border on the top
-                if (isBorder(map, i,j, MIDDLE) != isBorder(map, i+1, j, MIDDLE) && i+1 < rows)
+                if (i+1 < rows && isBorder(map, i,j, MIDDLE) != isBorder(map, i+1, j, MIDDLE))
                 {
                     fprintf(stderr, "Invalid");
                     return 1;
@@ -368,7 +368,7 @@ void turnRight(int *prefBorder, int r, int c)
 //function that solves maze using right hand rule
 int rPath(Map *map, int r, int c)
 {
-    //checks if the user input is correct
+    //check if the user input is correct
     if (r > map->rows || r < 1 || c > map->cols || c < 1)
     {
         fprintf(stderr, "Values of R and C are not within the matrix");
@@ -406,7 +406,7 @@ int rPath(Map *map, int r, int c)
 //function that solves maze using left hand rule
 int lPath(Map *map, int r, int c)
 {
-    //checks if the user input is correct
+    //check if the user input is correct
     if (r > map->rows || r < 1 || c > map->cols || c < 1)
     {
         fprintf(stderr, "Values of R and C are not within the matrix");
@@ -441,6 +441,7 @@ int lPath(Map *map, int r, int c)
     return 0;
 }
 
+//function for processing data from a file and appending them to a map struct
 void processFile(const char *filename, int *rows, int *cols, Map **map) 
 {
     FILE *file = fopen(filename, "r");
