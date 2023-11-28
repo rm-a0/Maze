@@ -1,5 +1,5 @@
 //xrepcim00
-//23.11.2023
+//28.11.2023
 
 #include <stdio.h>
 #include <string.h>
@@ -15,20 +15,36 @@ typedef struct {
     unsigned char *cells;
 } Map;
 
+//struct containing coordinates of a position in a matrix 
+typedef struct {
+    int row;
+    int col;
+} Position;
+
+//struct containing array of Positions
+//front and back are used for indexing array
+typedef struct {
+    Position* array;
+    int front;
+    int back;
+    int capacity;
+} Queue;
+
 enum Triangle {
     LEFT,
     RIGHT,
     MIDDLE
 };
 
+//function that displays instructions
 void displayInstructions()
 {
     printf("\n");
     printf("Input a file containing matrix of numbers\n");
-    printf("Type '--test <file' to check if data in the matrix are valid\n");
-    printf("Type '--rpath R C <file' to solve labyrinth using the right hand rule\n");
-    printf("Type '--lpath R C <file' to solve labyrinth using the left hand rule\n");
-    printf("Type '--shortest R C <file' to find the shortest path in the labyrinth\n");
+    printf("Type '--test file' to check if data in the matrix are valid\n");
+    printf("Type '--rpath R C file' to solve labyrinth using the right hand rule\n");
+    printf("Type '--lpath R C file' to solve labyrinth using the left hand rule\n");
+    printf("Type '--shortest R C file' to find the shortest path in the labyrinth\n");
     printf("\033[3mR C = row and collumn you want to start on\033[0m\n");
     printf("\n");
 }
@@ -69,11 +85,121 @@ int scanFile(int *rows, int *cols, FILE *file)
     return 0;
 }
 
-//funnction that allocates memory for 2d matrix and returns pointer to a Map struct
+//function that allocates memory for 2d array of integers
+int** createVisited(int rows, int cols)
+{
+    int** visited = (int**)malloc(rows * sizeof(int*));
+
+    if (visited == NULL)
+    {
+        fprintf(stderr,"Memory allocation failed\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < rows; i++)
+    {
+        visited[i] = (int*)malloc(cols * sizeof(int));
+
+        if (visited[i] == NULL)
+        {
+            fprintf(stderr,"Memory allocation failed\n");
+            for(int j = 0; j < i; j++)
+            {
+                free(visited[j]);
+            }
+            free(visited);
+            exit(1);
+        }
+    }
+    return visited;
+}
+
+//function that gets rid of memory allocated for 2d array
+void freeVisited(int** visited, int rows)
+{
+    for(int i = 0; i < rows; i++)
+    {
+        free(visited[i]);
+    }
+    free(visited);
+}
+
+//function that allocates memory for 2d array of Positions
+Position** createParent(int rows, int cols)
+{
+    Position** array = (Position**)malloc(rows * sizeof(Position*));
+
+    if (array == NULL)
+    {
+        fprintf(stderr,"Memory allocation failed\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < rows; i++)
+    {
+        array[i] = (Position*)malloc(cols * sizeof(Position));
+        if (array[i] == NULL)
+        {
+            fprintf(stderr,"Memory allocation failed\n");
+            for (int j = 0; j < i; j++)
+            {
+                free(array[j]);
+            }
+            free(array);
+            exit(1);
+        }
+    }
+    return array;
+}
+
+//function that gets rid of memory allocated fot 2d array of Positions
+void freeParent(Position** array, int rows)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        free(array[i]);
+    }
+    free(array);
+}
+
+//function that allocates memory for Queue struct
+Queue* createQueue(int capacity)
+{
+    Queue* queue = (Queue*)malloc(sizeof(Queue));
+
+    if (queue == NULL)
+    {
+        fprintf(stderr,"Memory allocation failed\n");
+        exit(1);
+    }
+
+    queue->capacity = capacity;
+    queue->front = -1;
+    queue->back = -1;
+
+    //allocate memory for array of Positions
+    queue->array = (Position*)malloc(capacity * sizeof(Position));
+
+    if (queue->array == NULL)
+    {
+        fprintf(stderr,"Memory allocation failed\n");
+        free(queue);
+        exit(1);
+    }
+    return queue;
+}
+
+//fucntion that gets rid of memory allocated for Queue struct
+void freeQueue(Queue* queue)
+{
+    free(queue->array);
+    free(queue);
+}
+
+//function that allocates memory for Map struct
 Map* createMap(int rows, int cols) 
 {
-    //allocates memory for Map struct
-    Map *map = (Map *)malloc(sizeof(Map));
+    Map *map = (Map*)malloc(sizeof(Map));
 
     if (map == NULL) 
     {
@@ -84,21 +210,18 @@ Map* createMap(int rows, int cols)
     map->rows = rows;
     map->cols = cols;
 
-    //allocates memory for 2d matrix cells
+    //allocates memory for cells
     map->cells = (unsigned char *)malloc(rows * cols * sizeof(unsigned char));
     if (map->cells == NULL) 
     {
         fprintf(stderr, "Memory allocation for the matrix failed\n");
-
-        //if second memory allocation fails, free previously allocated memory
         free(map);
         return NULL;
     }
-    //return pointer to a struct called Map
     return map;
 }
 
-//function that gets rid of all allocated memory
+//function that gets rid of memory allocated for Map struct
 void freeMap(Map *map)
 {
     free(map->cells);
@@ -129,7 +252,47 @@ int appendToMap(Map *map, FILE *file)
         return 1;
     }
     return 0;
-} 
+}
+
+//function for processing data from a file and appending them to a Map struct
+void processFile(const char *filename, int *rows, int *cols, Map **map) 
+{
+    //open file
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) 
+    {
+        fprintf(stderr, "Error opening file\n");
+        exit(1);
+    }
+
+    //Read from file to get the necessary data
+    if (scanFile(rows, cols, file) != 0) 
+    {
+        fclose(file);
+        exit(1);
+    }
+
+    //Create a Map struct
+    *map = createMap(*rows, *cols);
+    
+    if (*map == NULL) 
+    {
+        fprintf(stderr, "Error creating map\n");
+        fclose(file);
+        freeMap(*map);
+        exit(1);
+    }
+
+    // Append data to the map
+    if (appendToMap(*map, file) != 0) 
+    {
+        fclose(file);
+        freeMap(*map);
+        exit(1);
+    }
+
+    fclose(file);
+}
 
 //function that returns true if there is an obstacle at border of given position
 bool isBorder(Map *map, int row, int col, int border)
@@ -177,6 +340,16 @@ int testMap(int rows, int cols, Map *map)
     }
     printf("Valid\n");
     return 0;
+}
+
+//function that returns true if position is within the matrix
+bool isInMap(Map *map, int r, int c)
+{
+    if (r > map->rows || r < 1 || c > map->cols || c < 1)
+    {
+        return false;
+    }
+    return true;
 }
 
 //function that returns value of border that is prefered on the first position
@@ -368,8 +541,8 @@ void turnRight(int *prefBorder, int r, int c)
 //function that solves maze using right hand rule
 int rPath(Map *map, int r, int c)
 {
-    //check if the user input is correct
-    if (r > map->rows || r < 1 || c > map->cols || c < 1)
+    //check if the user input is within the map
+    if (!isInMap(map, r, c))
     {
         fprintf(stderr, "Values of R and C are not within the matrix");
         return 1;
@@ -381,10 +554,10 @@ int rPath(Map *map, int r, int c)
     //print first position
     printf("%d,%d\n", r, c);
 
-    //loop that functions only when r and c are within boundaries of a map
+    //loop that functions only when r and c are within the boundaries of a map
     while(r <= map->rows && c <= map->cols && r > 0 && c > 0) 
     {
-        if (isBorder(map, r-1, c-1, prefBorder) == 0)
+        if (isBorder(map, r-1, c-1, prefBorder) == false)
         {
             step(prefBorder, &r, &c);
             changeBorder(&prefBorder, r, c, RIGHT);
@@ -406,8 +579,8 @@ int rPath(Map *map, int r, int c)
 //function that solves maze using left hand rule
 int lPath(Map *map, int r, int c)
 {
-    //check if the user input is correct
-    if (r > map->rows || r < 1 || c > map->cols || c < 1)
+    //check if the user input is within the map
+    if (!isInMap(map, r, c))
     {
         fprintf(stderr, "Values of R and C are not within the matrix");
         return 1;
@@ -419,10 +592,10 @@ int lPath(Map *map, int r, int c)
     //print first position
     printf("%d,%d\n", r, c);
 
-    //loop that functions only when r and c are within boundaries of a map
+    //loop that functions only when r and c are within the boundaries of a map
     while(r <= map->rows && c <= map->cols && r > 0 && c > 0) 
     {
-        if (isBorder(map, r-1, c-1, prefBorder) == 0)
+        if (isBorder(map, r-1, c-1, prefBorder) == false)
         {
             step(prefBorder, &r, &c);
             changeBorder(&prefBorder, r, c, LEFT);
@@ -441,43 +614,182 @@ int lPath(Map *map, int r, int c)
     return 0;
 }
 
-//function for processing data from a file and appending them to a map struct
-void processFile(const char *filename, int *rows, int *cols, Map **map) 
+//function that returns true if queue is empty
+bool isEmpty(Queue* queue)
 {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) 
+    if (queue->front != -1)
     {
-        fprintf(stderr, "Error opening file\n");
+        return false;
+    }
+    return true;
+}
+
+//function that returns true if position matches certain conditions
+bool isDestination(Map *map, int r, int c)
+{
+    if (r == 0 && (r+c)%2 == 0 && !isBorder(map, r, c, MIDDLE))
+    {
+        return true;
+    }
+    else if (r == map->rows-1 && (r+c)%2 == 1 && !isBorder(map, r, c, MIDDLE))
+    {
+        return true;
+    }
+    else if (c == 0 && !isBorder(map, r, c, LEFT))
+    {
+        return true;
+    }
+    else if (c == map->cols-1 && !isBorder(map, r, c, RIGHT))
+    {
+        return true;
+    }
+    return false;
+}
+
+//function that adds Position into a queue
+void enqueue(Queue *queue, Position p)
+{
+    if(queue->back == (int)queue->capacity - 1)
+    {
+        fprintf(stderr,"Queue overflow\n");
+        exit(1);
+    }
+    if (queue->front == -1)
+    {
+        queue->front = 0;
+    }
+
+    queue->back++;
+    queue->array[queue->back] = p;
+}
+
+//function that returns front Position from a queue
+Position dequeue(Queue *queue)
+{
+    if(isEmpty(queue) == true)
+    {
+        fprintf(stderr,"Queue underflow\n");
         exit(1);
     }
 
-    //Read from file to get the necessary data
-    if (scanFile(rows, cols, file) != 0) 
+    Position p = queue->array[queue->front];
+    queue->front++;
+
+    if (queue->front > queue->back)
     {
-        fclose(file);
-        exit(1);
+        queue->front = queue->back - 1;
+    }
+    return p;
+}
+
+//function that prints shortest path
+void printPath(Map *map, Position **parent, Position finish)
+{
+    //create a stack for storing positions
+    Position* stack = (Position*)malloc(map->rows * map->cols *sizeof(Position));
+    Position current = finish;
+    int index = -1;
+
+    while (current.row != -1 && current.col != -1)
+    {
+        //add positions from finish to start into stack
+        index++;
+        stack[index] = current;
+        current = parent[current.row][current.col];
     }
 
-    //Create a map and fill it with data from the file
-    *map = createMap(*rows, *cols);
-    
-    if (*map == NULL) 
+    //print stack
+    while (index >= 0)
     {
-        //Handle the case where map creation fails
-        fprintf(stderr, "Error creating map\n");
-        fclose(file);
-        exit(1);
+        printf("%d,%d\n", stack[index].row + 1, stack[index].col + 1);
+        index--;
+    }    
+
+    free(stack);
+}
+
+//function with BFS algorithm 
+void BFS(Map *map, Position start)
+{
+    //create arrays for storing info about positions
+    int **visited = createVisited(map->rows, map->cols);
+    Position** parent = createParent(map->rows, map->cols);
+    //create queue struct
+    Queue* queue = createQueue(map->rows * map->cols);
+
+    //mark every Position in visited array as unvisited
+    //initialize non existing parent for every Position
+    for (int i = 0; i < map->rows; i++)
+    {
+        for (int j = 0; j < map->cols; j++)
+        {
+            visited[i][j] = 0;
+            parent[i][j] = (Position) {-1,-1};
+        }
     }
 
-    // Append data to the map
-    if (appendToMap(*map, file) != 0) 
+    //mark starting position as visited and add it into a queue
+    visited[start.row][start.col] = 1;
+    enqueue(queue, start);
+
+    while (!isEmpty(queue))
     {
-        fclose(file);
-        freeMap(*map);
-        exit(1);
+        //get position from the front of the queue
+        Position current = dequeue(queue);
+
+        //iterate throught every possible border
+        for (int i = 0; i < 3; i++)
+        {
+            int newRow = current.row;
+            int newCol =  current.col;
+            step(i, &newRow, &newCol);
+            
+            if(isInMap(map, newRow+1, newCol+1) && !isBorder(map, current.row, current.col, i) && visited[newRow][newCol] == 0)
+            {
+                //mark new position as visited and add parent to it
+                visited[newRow][newCol] = 1;
+                parent[newRow][newCol] = current;
+
+                //create Position struct for new position and add it into a queue 
+                Position adjacent = {newRow, newCol};
+                enqueue(queue, adjacent);
+                
+                //check if the position is not destination
+                if(isDestination(map, newRow, newCol))
+                {
+                    printPath(map, parent, adjacent);
+
+                    freeQueue(queue);
+                    freeVisited(visited, map->rows);
+                    freeParent(parent, map->rows);
+                    return;
+                }
+            }
+        }
+    }
+    //if queue is empty and no path was found print the following
+    printf("No path found\n");
+
+    freeQueue(queue);
+    freeVisited(visited, map->rows);
+    freeParent(parent, map->rows);
+}
+
+//function that finds shortest path in a maze
+int sPath(Map *map, int r, int c)
+{
+    //check if the user input is within the map
+    if (!isInMap(map, r, c))
+    {
+        fprintf(stderr, "Values of R and C are not within the matrix");
+        return 1;
     }
 
-    fclose(file);
+    //set start position 
+    Position start = {r-1, c-1};
+    //find shortest path using BFS algorithm
+    BFS(map, start);
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -486,6 +798,7 @@ int main(int argc, char *argv[])
     const char *test = "--test";
     const char *rpath = "--rpath";
     const char *lpath = "--lpath";
+    const char *shortest = "--shortest";
 
     int rows = 0;
     int cols = 0;
@@ -497,7 +810,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "No arguments given");
         return 1;
     }
-    
+
     //display instructions when '--help' is the user input
     if (strcmp(argv[1], help) == 0) 
     {
@@ -532,6 +845,17 @@ int main(int argc, char *argv[])
 
         //solve map using left hand rule
         lPath(map, atoi(argv[2]), atoi(argv[3]));
+
+        //free allocated memory
+        freeMap(map);
+    }
+    else if (strcmp(argv[1], shortest) == 0)
+    {
+        //process file and create struct Map from given data
+        processFile(argv[argc-1], &rows, &cols, &map);
+
+        //solve map using left hand rule
+        sPath(map, atoi(argv[2]), atoi(argv[3]));
 
         //free allocated memory
         freeMap(map);
