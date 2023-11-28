@@ -93,7 +93,7 @@ int** createVisited(int rows, int cols)
     if (visited == NULL)
     {
         fprintf(stderr,"Memory allocation failed\n");
-        exit(1);
+        return NULL;
     }
 
     for (int i = 0; i < rows; i++)
@@ -108,7 +108,7 @@ int** createVisited(int rows, int cols)
                 free(visited[j]);
             }
             free(visited);
-            exit(1);
+            return NULL;
         }
     }
     return visited;
@@ -132,7 +132,7 @@ Position** createParent(int rows, int cols)
     if (array == NULL)
     {
         fprintf(stderr,"Memory allocation failed\n");
-        exit(1);
+        return NULL;
     }
 
     for (int i = 0; i < rows; i++)
@@ -146,7 +146,7 @@ Position** createParent(int rows, int cols)
                 free(array[j]);
             }
             free(array);
-            exit(1);
+            return NULL;
         }
     }
     return array;
@@ -170,7 +170,7 @@ Queue* createQueue(int capacity)
     if (queue == NULL)
     {
         fprintf(stderr,"Memory allocation failed\n");
-        exit(1);
+        return NULL;
     }
 
     queue->capacity = capacity;
@@ -184,7 +184,7 @@ Queue* createQueue(int capacity)
     {
         fprintf(stderr,"Memory allocation failed\n");
         free(queue);
-        exit(1);
+        return NULL;
     }
     return queue;
 }
@@ -255,21 +255,21 @@ int appendToMap(Map *map, FILE *file)
 }
 
 //function for processing data from a file and appending them to a Map struct
-void processFile(const char *filename, int *rows, int *cols, Map **map) 
+int processFile(const char *filename, int *rows, int *cols, Map **map) 
 {
     //open file
     FILE *file = fopen(filename, "r");
     if (file == NULL) 
     {
         fprintf(stderr, "Error opening file\n");
-        exit(1);
+        return -1;
     }
 
     //Read from file to get the necessary data
     if (scanFile(rows, cols, file) != 0) 
     {
         fclose(file);
-        exit(1);
+        return -1;
     }
 
     //Create a Map struct
@@ -280,7 +280,8 @@ void processFile(const char *filename, int *rows, int *cols, Map **map)
         fprintf(stderr, "Error creating map\n");
         fclose(file);
         freeMap(*map);
-        exit(1);
+        fclose(file);
+        return -1;
     }
 
     // Append data to the map
@@ -288,10 +289,11 @@ void processFile(const char *filename, int *rows, int *cols, Map **map)
     {
         fclose(file);
         freeMap(*map);
-        exit(1);
+        return -1;
     }
 
     fclose(file);
+    return 0;
 }
 
 //function that returns true if there is an obstacle at border of given position
@@ -314,7 +316,7 @@ int testMap(int rows, int cols, Map *map)
             //if border is on the right side of the triangle, the next triangle should have border on its left side
             if (j+1 < cols && isBorder(map, i, j, RIGHT) != isBorder(map, i, j+1, LEFT))
             {
-                fprintf(stderr, "Invalid");
+                fprintf(stderr, "Invalid\n");
                 return 1;
             }
             //when i+j is divisible by 2 the triangle is upside down
@@ -323,7 +325,7 @@ int testMap(int rows, int cols, Map *map)
                 //if border is at the top of the triangle, the triangle above should have border on the bottom
                 if (i-1 >= 0 && isBorder(map, i,j, MIDDLE) != isBorder(map, i-1, j, MIDDLE))
                 {
-                    fprintf(stderr, "Invalid");
+                    fprintf(stderr, "Invalid\n");
                     return 1;
                 }
             }
@@ -332,7 +334,7 @@ int testMap(int rows, int cols, Map *map)
                 //if border is at the bottom of the triangle, the triangle bellow should have border on the top
                 if (i+1 < rows && isBorder(map, i,j, MIDDLE) != isBorder(map, i+1, j, MIDDLE))
                 {
-                    fprintf(stderr, "Invalid");
+                    fprintf(stderr, "Invalid\n");
                     return 1;
                 }
             }
@@ -544,12 +546,19 @@ int rPath(Map *map, int r, int c)
     //check if the user input is within the map
     if (!isInMap(map, r, c))
     {
-        fprintf(stderr, "Values of R and C are not within the matrix");
+        fprintf(stderr, "Values of R and C are not within the matrix\n");
         return 1;
     }
 
     int prefBorder;
     prefBorder = startBorder(map, r, c, RIGHT);
+
+    //check if first position is valid
+    if(prefBorder == -1)
+    {
+        fprintf(stderr,"Invalid starting position\n");
+        return 1;
+    }
 
     //print first position
     printf("%d,%d\n", r, c);
@@ -588,6 +597,13 @@ int lPath(Map *map, int r, int c)
 
     int prefBorder;
     prefBorder = startBorder(map, r, c, LEFT);
+
+    //check if first position is valid
+    if(prefBorder == -1)
+    {
+        fprintf(stderr,"Invalid starting position\n");
+        return 1;
+    }
 
     //print first position
     printf("%d,%d\n", r, c);
@@ -652,7 +668,7 @@ void enqueue(Queue *queue, Position p)
     if(queue->back == (int)queue->capacity - 1)
     {
         fprintf(stderr,"Queue overflow\n");
-        exit(1);
+        return;
     }
     if (queue->front == -1)
     {
@@ -669,7 +685,8 @@ Position dequeue(Queue *queue)
     if(isEmpty(queue) == true)
     {
         fprintf(stderr,"Queue underflow\n");
-        exit(1);
+        Position p = {-1, -1};
+        return p;
     }
 
     Position p = queue->array[queue->front];
@@ -807,7 +824,7 @@ int main(int argc, char *argv[])
     //if there are no arguments in command line exit with an error
     if (argc < 2)
     {
-        fprintf(stderr, "No arguments given");
+        fprintf(stderr, "No arguments given\n");
         return 1;
     }
 
@@ -819,7 +836,11 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[1], test) == 0) 
     {
         //process file and create struct Map from given data
-        processFile(argv[argc-1], &rows, &cols, &map);
+        if (processFile(argv[2], &rows, &cols, &map) == -1)
+        {
+            fprintf(stderr,"Error processing a file\n");
+            return -1;
+        }
 
         //run test to check if data in the matrix are correct
         testMap(rows, cols, map);
@@ -830,7 +851,11 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[1], rpath) == 0)
     {
         //process file and create struct Map from given data
-        processFile(argv[argc-1], &rows, &cols, &map);
+        if (processFile(argv[4], &rows, &cols, &map) == -1)
+        {
+            fprintf(stderr,"Error processing a file\n");
+            return -1;
+        }
 
         //solve map using right hand rule
         rPath(map, atoi(argv[2]), atoi(argv[3]));
@@ -841,7 +866,11 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[1], lpath) == 0)
     {
         //process file and create struct Map from given data
-        processFile(argv[argc-1], &rows, &cols, &map);
+        if (processFile(argv[4], &rows, &cols, &map) == -1)
+        {
+            fprintf(stderr,"Error processing a file\n");
+            return -1;
+        }
 
         //solve map using left hand rule
         lPath(map, atoi(argv[2]), atoi(argv[3]));
@@ -852,7 +881,11 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[1], shortest) == 0)
     {
         //process file and create struct Map from given data
-        processFile(argv[argc-1], &rows, &cols, &map);
+        if (processFile(argv[4], &rows, &cols, &map) == -1)
+        {
+            fprintf(stderr,"Error processing a file\n");
+            return -1;
+        }
 
         //solve map using left hand rule
         sPath(map, atoi(argv[2]), atoi(argv[3]));
