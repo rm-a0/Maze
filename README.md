@@ -15,8 +15,9 @@ left    right   middle
 1 = border
 
 # How to use
+<pre>
 Compile the program using:
-
+<\pre>
 gcc -std=c11 -Wall -Wextra -Werror maze.c -o maze
 
 Run the program using:
