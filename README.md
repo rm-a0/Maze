@@ -1,5 +1,5 @@
 # Overview
-This program is designed to solve triangular mazes using right hand rule, left hand rule and BFS algorithm.__
+This program is designed to solve triangular mazes using right hand rule, left hand rule and BFS algorithm.\
 Solve = find path out of the maze
 
 # Maze  
@@ -21,8 +21,8 @@ _gcc -std=c11 -Wall -Wextra -Werror maze.c -o maze_
 
 Run the program using:
 
-_$ ./maze --help_ (display instructions)__
-_$ ./maze --test file.txt_ (test if map in the file is valid)__
-_$ ./maze --rpath R C file.txt_ (solve the maze using right hand rule)__
-_$ ./maze --lpath R C file.txt_ (solve the maze using left hand rule)__
-_$ ./maze --shortest R C file.txt_ (solve the maze using BFS algorithm)__
+_$ ./maze --help_ (display instructions)\
+_$ ./maze --test file.txt_ (test if map in the file is valid)\
+_$ ./maze --rpath R C file.txt_ (solve the maze using right hand rule)\
+_$ ./maze --lpath R C file.txt_ (solve the maze using left hand rule)\
+_$ ./maze --shortest R C file.txt_ (solve the maze using BFS algorithm)\
