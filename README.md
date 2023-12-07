@@ -11,7 +11,7 @@ For example number 5 (bin 101) tells us that it has borders on the left and midd
 1x2^0 + 0x2^1 + 1x2^2 = 1 + 0 + 4 = 5
 left    right   middle
 
-0 = no border
+0 = no border\
 1 = border
 
 # How to use
@@ -25,4 +25,4 @@ _$ ./maze --help_ (display instructions)\
 _$ ./maze --test file.txt_ (test if map in the file is valid)\
 _$ ./maze --rpath R C file.txt_ (solve the maze using right hand rule)\
 _$ ./maze --lpath R C file.txt_ (solve the maze using left hand rule)\
-_$ ./maze --shortest R C file.txt_ (solve the maze using BFS algorithm)\
+_$ ./maze --shortest R C file.txt_ (solve the maze using BFS algorithm)
