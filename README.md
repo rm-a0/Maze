@@ -21,9 +21,9 @@ _gcc -std=c11 -Wall -Wextra -Werror maze.c -o maze_
 
 Run the program using:
 <pre>
-_$ ./maze --help_ (display instructions)\
-_$ ./maze --test file.txt_ (test if map in the file is valid)\
-_$ ./maze --rpath R C file.txt_ (solve the maze using right hand rule)\
-_$ ./maze --lpath R C file.txt_ (solve the maze using left hand rule)\
-_$ ./maze --shortest R C file.txt_ (solve the maze using BFS algorithm)
+$ ./maze --help   (display instructions)\
+$ ./maze --test file.txt   (test if map in the file is valid)
+$ ./maze --rpath R C file.txt   (solve the maze using right hand rule)
+$ ./maze --lpath R C file.txt   (solve the maze using left hand rule)
+$ ./maze --shortest R C file.txt   (solve the maze using BFS algorithm)
 </pre>
