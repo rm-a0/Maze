@@ -17,13 +17,13 @@ left    right   middle
 # How to use
 Compile the program using:
 
-_gcc -std=c11 -Wall -Wextra -Werror maze.c -o maze_
+gcc -std=c11 -Wall -Wextra -Werror maze.c -o maze
 
 Run the program using:
 <pre>
-$ ./maze --help   (display instructions)\
-$ ./maze --test file.txt   (test if map in the file is valid)
-$ ./maze --rpath R C file.txt   (solve the maze using right hand rule)
-$ ./maze --lpath R C file.txt   (solve the maze using left hand rule)
-$ ./maze --shortest R C file.txt   (solve the maze using BFS algorithm)
+$ ./maze --help                      (display instructions)
+$ ./maze --test file.txt             (test if map in the file is valid)
+$ ./maze --rpath R C file.txt        (solve the maze using right hand rule)
+$ ./maze --lpath R C file.txt        (solve the maze using left hand rule)
+$ ./maze --shortest R C file.txt     (solve the maze using BFS algorithm)
 </pre>
