@@ -16,8 +16,12 @@ left    right   middle
 # How to use
 Compile the program using:
 
-_gcc -std=c11 -Wall -Wextra -Werror keyfilter.c -o keyfilter_
+_gcc -std=c11 -Wall -Wextra -Werror maze.c -o maze_
 
 Run the program using:
 
-_$ ./keyfilter input < file.txt_# Maze
+_$ ./maze --help_
+_$ ./maze --test file.txt_
+_$ ./maze --rpath R C file.txt_
+_$ ./maze --lpath R C file.txt_
+_$ ./maze --shortest R C file.txt_
