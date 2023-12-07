@@ -7,7 +7,7 @@ Each number represents one cell in a maze. When converted to binary and read fro
 
 For example number 5 (bin 101) tells us that it has borders on the left and middle side of the triangle and the right side is free.
 
-1*2^0 + 0*2^1 + 1*2^2 = 1 + 0 + 4 = 5
+1x2^0 + 0x2^1 + 1x2^2 = 1 + 0 + 4 = 5
 left    right   middle
 
 0 = no border
